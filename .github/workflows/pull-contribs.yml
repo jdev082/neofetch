@@ -1,47 +1,45 @@
-name: Pull Upstream PRs
+name: Auto Merge Upstream PRs
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
 
 jobs:
-  merge_upstream_prs:
+  merge-prs:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - name: Checkout master branch
+        uses: actions/checkout@v3
+        with:
+          ref: 'master'
+      
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
 
-    - name: Setup GitHub CLI
-      run: |
-        echo "${{ secrets.TOKEN }}" | gh auth login --with-token
+      - name: Fetch and Merge Unmerged PRs from Upstream
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        run: |
+          echo "Adding upstream repository..."
+          git remote add upstream https://github.com/dylanaraps/neofetch.git
+          echo "Fetching from upstream..."
+          git fetch upstream
 
-    - name: Configure Git
-      run: |
-        git config user.name 'github-actions[bot]'
-        git config user.email 'github-actions[bot]@users.noreply.github.com'
+          echo "Checking for open pull requests..."
+          prs=$(gh pr list -R dylanaraps/neofetch --json number --jq '.[].number')
+          echo "Found open PRs: $prs"
 
-    - name: Add upstream repository
-      run: |
-        git remote add upstream https://github.com/dylanaraps/neofetch.git
-        git fetch upstream
-
-    - name: Check for non-merged PRs and merge them
-      run: |
-        gh pr list --repo dylanaraps/neofetch --state open --json number,headRefName | jq -c '.[]' | while read -r PR; do
-          PR_NUMBER=$(echo "$PR" | jq -r '.number')
-          PR_BRANCH=$(echo "$PR" | jq -r '.headRefName')
-          echo "Attempting to merge PR #$PR_NUMBER from branch $PR_BRANCH"
-          git fetch upstream pull/$PR_NUMBER/head:pr-$PR_NUMBER
-          git checkout master  # Change this if your default branch is not 'master'
-          # Attempt to merge and check if it fails
-          if git merge --no-ff pr-$PR_NUMBER -m "Merge pull request #$PR_NUMBER from upstream"; then
-            echo "Successfully merged PR #$PR_NUMBER"
-            git push origin master
-          else
-            echo "Failed to merge PR #$PR_NUMBER. Skipping..."
-            git reset --hard
-            git clean -fd
+          for pr in $prs; do
+            echo "Attempting to merge PR #$pr from upstream..."
+            git fetch upstream pull/$pr/head:pr-$pr
             git checkout master
-          fi
-        done
+            if git merge --no-ff --log pr-$pr; then
+              echo "Successfully merged PR #$pr"
+              git push origin master
+            else
+              echo "Conflicts while merging PR #$pr, skipping..."
+              git merge --abort
+            fi
+          done
+
