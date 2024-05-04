@@ -17,6 +17,10 @@ jobs:
         git config user.name 'github-actions[bot]'
         git config user.email 'github-actions[bot]@users.noreply.github.com'
 
+    - name: Setup GitHub CLI
+      run: |
+        echo "${{ secrets.TOKEN }}" | gh auth login --with-token
+
     - name: Add upstream repository
       run: |
         git remote add upstream https://github.com/dylanaraps/neofetch.git
