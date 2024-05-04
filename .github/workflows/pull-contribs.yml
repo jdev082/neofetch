@@ -23,9 +23,8 @@ jobs:
         run: |
           echo "Adding upstream repository..."
           git remote add upstream https://github.com/dylanaraps/neofetch.git
-          echo "Fetching from upstream..."
           git fetch upstream
-
+          
           echo "Checking for open pull requests..."
           prs=$(gh pr list -R dylanaraps/neofetch --json number --jq '.[].number')
           echo "Found open PRs: $prs"
@@ -34,12 +33,16 @@ jobs:
             echo "Attempting to merge PR #$pr from upstream..."
             git fetch upstream pull/$pr/head:pr-$pr
             git checkout master
-            if git merge --no-ff --log pr-$pr; then
+            set +e  # Disable error stopping
+            git merge --no-ff --log pr-$pr
+            MERGE_STATUS=$?
+            set -e  # Re-enable error stopping
+            if [ $MERGE_STATUS -eq 0 ]; then
               echo "Successfully merged PR #$pr"
               git push origin master
             else
               echo "Conflicts while merging PR #$pr, skipping..."
               git merge --abort
             fi
+            git checkout master  # Ensure back on master for next iteration
           done
-
