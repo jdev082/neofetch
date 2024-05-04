@@ -33,7 +33,7 @@ jobs:
           PR_BRANCH=$(echo "$PR" | jq -r '.headRefName')
           echo "Merging PR #$PR_NUMBER from branch $PR_BRANCH"
           git fetch upstream pull/$PR_NUMBER/head:pr-$PR_NUMBER
-          git checkout main  # Change this if your default branch is not 'main'
+          git checkout master
           git merge --no-ff pr-$PR_NUMBER -m "Merge pull request #$PR_NUMBER from upstream"
-          git push origin main
+          git push origin master
         done
