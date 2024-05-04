@@ -31,9 +31,17 @@ jobs:
         gh pr list --repo dylanaraps/neofetch --state open --json number,headRefName | jq -c '.[]' | while read -r PR; do
           PR_NUMBER=$(echo "$PR" | jq -r '.number')
           PR_BRANCH=$(echo "$PR" | jq -r '.headRefName')
-          echo "Merging PR #$PR_NUMBER from branch $PR_BRANCH"
+          echo "Attempting to merge PR #$PR_NUMBER from branch $PR_BRANCH"
           git fetch upstream pull/$PR_NUMBER/head:pr-$PR_NUMBER
-          git checkout master
-          git merge --no-ff pr-$PR_NUMBER -m "Merge pull request #$PR_NUMBER from upstream"
-          git push origin master
+          git checkout master  # Change this if your default branch is not 'master'
+          # Attempt to merge and check if it fails
+          if git merge --no-ff pr-$PR_NUMBER -m "Merge pull request #$PR_NUMBER from upstream"; then
+            echo "Successfully merged PR #$PR_NUMBER"
+            git push origin master
+          else
+            echo "Failed to merge PR #$PR_NUMBER. Skipping..."
+            git reset --hard
+            git clean -fd
+            git checkout master
+          fi
         done
