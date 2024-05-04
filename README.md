@@ -1,3 +1,6 @@
+# neofetch-pullcontribs
+Pull requests sent to upstream are merged automatically.
+# Original README
 <h3 align="center"><img src="https://i.imgur.com/ZQI2EYz.png" alt="logo" height="100px"></h3>
 <p align="center">A command-line system information tool written in bash 3.2+</p>
 
