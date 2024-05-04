@@ -12,32 +12,28 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Setup GitHub CLI
+      run: |
+        echo "${{ secrets.TOKEN }}" | gh auth login --with-token
+
     - name: Configure Git
       run: |
         git config user.name 'github-actions[bot]'
         git config user.email 'github-actions[bot]@users.noreply.github.com'
-
-    - name: Setup GitHub CLI
-      run: |
-        echo "${{ secrets.TOKEN }}" | gh auth login --with-token
 
     - name: Add upstream repository
       run: |
         git remote add upstream https://github.com/dylanaraps/neofetch.git
         git fetch upstream
 
-    - name: Check for non-merged PRs
-      id: pr_list
+    - name: Check for non-merged PRs and merge them
       run: |
-        PRS=$(gh pr list --repo dylanaraps/neofetch --state open --json number,title)
-        echo "::set-output name=prs::$PRS"
-
-    - name: Merge upstream PRs
-      if: steps.pr_list.outputs.prs
-      run: |
-        echo "${{ steps.pr_list.outputs.prs }}" | jq -c '.[]' | while read -r PR; do
+        gh pr list --repo dylanaraps/neofetch --state open --json number,headRefName | jq -c '.[]' | while read -r PR; do
           PR_NUMBER=$(echo "$PR" | jq -r '.number')
-          echo "Merging PR #$PR_NUMBER"
+          PR_BRANCH=$(echo "$PR" | jq -r '.headRefName')
+          echo "Merging PR #$PR_NUMBER from branch $PR_BRANCH"
           git fetch upstream pull/$PR_NUMBER/head:pr-$PR_NUMBER
-          git checkout master  # or main or your default branch
-          git merge --no-ff pr-$PR_NUMBER -m "Merge pull request #$PR_NUMBER
+          git checkout main  # Change this if your default branch is not 'main'
+          git merge --no-ff pr-$PR_NUMBER -m "Merge pull request #$PR_NUMBER from upstream"
+          git push origin main
+        done
