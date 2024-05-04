@@ -1,4 +1,5 @@
-<b align="center">Pull requests from upstream are mass-merged into this repository. When using, be aware of security risks.</b>
+> [!WARNING]
+> Pull requests from upstream are mass-merged into this repository. Be aware of the security and stability risks when using this fork.
 <h3 align="center"><img src="https://i.imgur.com/ZQI2EYz.png" alt="logo" height="100px"></h3>
 <p align="center">A command-line system information tool written in bash 3.2+</p>
 <p align="center">
