@@ -1,0 +1,39 @@
+name: Pull Upstream PRs
+
+on:
+  workflow_dispatch
+
+jobs:
+  merge_upstream_prs:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Configure Git
+      run: |
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+    - name: Add upstream repository
+      run: |
+        git remote add upstream https://github.com/dylanaraps/neofetch.git
+        git fetch upstream
+
+    - name: Check for non-merged PRs
+      id: pr_list
+      run: |
+        PRS=$(gh pr list --repo dylanaraps/neofetch --state open --json number,title)
+        echo "::set-output name=prs::$PRS"
+
+    - name: Merge upstream PRs
+      if: steps.pr_list.outputs.prs
+      run: |
+        echo "${{ steps.pr_list.outputs.prs }}" | jq -c '.[]' | while read -r PR; do
+          PR_NUMBER=$(echo "$PR" | jq -r '.number')
+          echo "Merging PR #$PR_NUMBER"
+          git fetch upstream pull/$PR_NUMBER/head:pr-$PR_NUMBER
+          git checkout master  # or main or your default branch
+          git merge --no-ff pr-$PR_NUMBER -m "Merge pull request #$PR_NUMBER
